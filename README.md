@@ -7,7 +7,7 @@ A fast SQL formatter and minifier. Single binary, no runtime dependencies.
 ### Quick Install (Linux / macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/scripts/install.sh | sh
 ```
 
 This downloads the latest release binary and installs it to `/usr/local/bin`. Uses `sudo` if needed.

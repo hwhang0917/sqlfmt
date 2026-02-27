@@ -2,6 +2,27 @@
 
 A fast SQL formatter and minifier. Single binary, no runtime dependencies.
 
+## Installation
+
+### Quick Install (Linux / macOS)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/install.sh | sh
+```
+
+This downloads the latest release binary and installs it to `/usr/local/bin`. Uses `sudo` if needed.
+
+### Build from Source
+
+Requires [Rust](https://www.rust-lang.org/tools/install) toolchain.
+
+```bash
+git clone https://github.com/hwhang0917/sqlfmt.git
+cd sqlfmt
+cargo build --release
+cp target/release/sqlfmt /usr/local/bin/
+```
+
 ## Usage
 
 ```bash
@@ -67,14 +88,6 @@ WHERE
 -- Output
 SELECT id,name FROM users WHERE id=1;
 ```
-
-## Build
-
-```bash
-cargo build --release
-```
-
-Binary will be at `target/release/sqlfmt`.
 
 ## License
 

@@ -7,3 +7,7 @@ license = "MIT"
 
 [dependencies]
 clap = { version = "4.5.60", features = ["derive"] }
+ureq = { version = "3", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+flate2 = "1"
+tar = "0.4"

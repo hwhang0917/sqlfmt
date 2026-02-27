@@ -33,8 +33,8 @@ fn filter_tokens(tokens: &[Token]) -> Vec<&Token> {
 }
 
 fn next_significant_token(tokens: &[&Token], from: usize) -> Option<usize> {
-    for j in (from + 1)..tokens.len() {
-        if !matches!(tokens[j], Token::Comment(_)) {
+    for (j, tok) in tokens.iter().enumerate().skip(from + 1) {
+        if !matches!(tok, Token::Comment(_)) {
             return Some(j);
         }
     }

@@ -77,6 +77,29 @@ fn cli_help_flag() {
 }
 
 #[test]
+fn cli_version_flag() {
+    let output = sqlfmt()
+        .arg("--version")
+        .output()
+        .expect("failed to run sqlfmt");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("sqlfmt"));
+    assert!(stdout.contains("0.1.0"));
+}
+
+#[test]
+fn cli_version_short_flag() {
+    let output = sqlfmt()
+        .arg("-V")
+        .output()
+        .expect("failed to run sqlfmt");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("sqlfmt"));
+}
+
+#[test]
 fn cli_empty_input() {
     use std::io::Write;
     use std::process::Stdio;

@@ -36,3 +36,9 @@ fn minify_parens() {
     let tokens = tokenize("SELECT COUNT( * ) FROM t;");
     assert_eq!(minify(&tokens), "SELECT COUNT(*) FROM t;");
 }
+
+#[test]
+fn minify_dot_qualified_keyword_column() {
+    let tokens = tokenize("SELECT t.count, t.key FROM t;");
+    assert_eq!(minify(&tokens), "SELECT t.COUNT,t.KEY FROM t;");
+}

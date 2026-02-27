@@ -94,6 +94,15 @@ pub fn beautify(tokens: &[Token]) -> String {
             Token::Keyword(kw) => {
                 let upper = kw.to_uppercase();
 
+                // After a dot (e.g., t.count), emit as-is without spacing
+                if out.ends_with('.') {
+                    out.push_str(&upper);
+                    line_started = true;
+                    last_was_keyword = false;
+                    i += 1;
+                    continue;
+                }
+
                 // Inside inline parens, keywords are just inline
                 if inline_paren_depth > 0 {
                     if line_started {
@@ -339,6 +348,7 @@ enum PrevToken {
     Keyword,
     Word,
     Operator,
+    Dot,
     Comma,
     Semicolon,
     OpenParen,
@@ -346,6 +356,9 @@ enum PrevToken {
 }
 
 fn needs_space(prev: PrevToken, token: &Token) -> bool {
+    if prev == PrevToken::Dot {
+        return false;
+    }
     match token {
         Token::Keyword(_) => matches!(
             prev,
@@ -357,6 +370,7 @@ fn needs_space(prev: PrevToken, token: &Token) -> bool {
                 PrevToken::Keyword | PrevToken::Word | PrevToken::CloseParen
             )
         }
+        Token::Operator(op) if op == "." => false,
         Token::Operator(_) => prev == PrevToken::Keyword,
         _ => false,
     }
@@ -395,7 +409,7 @@ pub fn minify(tokens: &[Token]) -> String {
             }
             Token::Operator(op) => {
                 out.push_str(op);
-                prev = PrevToken::Operator;
+                prev = if op == "." { PrevToken::Dot } else { PrevToken::Operator };
             }
             Token::Comma => {
                 out.push(',');

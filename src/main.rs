@@ -6,7 +6,7 @@ use std::io::{self, IsTerminal, Read};
 use std::process;
 
 #[derive(Parser)]
-#[command(name = "sqlfmt", about = "Format and beautify SQL")]
+#[command(name = "sqlfmt", about = "Format and beautify SQL", version)]
 struct Cli {
     /// SQL string to format (reads from stdin if omitted)
     sql: Option<String>,

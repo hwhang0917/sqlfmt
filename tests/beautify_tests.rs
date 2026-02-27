@@ -131,3 +131,16 @@ ORDER BY
 ";
     assert_eq!(beautify(&tokens), expected);
 }
+
+#[test]
+fn beautify_dot_qualified_keyword_column() {
+    let tokens = tokenize("SELECT t.count, t.key FROM t;");
+    let expected = "\
+SELECT
+  t.COUNT,
+  t.KEY
+FROM
+  t;
+";
+    assert_eq!(beautify(&tokens), expected);
+}

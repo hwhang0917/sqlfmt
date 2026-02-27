@@ -1,5 +1,5 @@
-mod formatter;
-mod tokenizer;
+use sqlfmt::formatter;
+use sqlfmt::tokenizer;
 
 use clap::Parser;
 use std::io::{self, IsTerminal, Read};

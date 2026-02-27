@@ -1,3 +1,5 @@
+mod update;
+
 use sqlfmt::formatter;
 use sqlfmt::tokenizer;
 
@@ -14,10 +16,19 @@ struct Cli {
     /// Minify SQL instead of beautifying
     #[arg(short, long)]
     minify: bool,
+
+    /// Update sqlfmt to the latest release
+    #[arg(short = 'U', long)]
+    update: bool,
 }
 
 fn main() {
     let cli = Cli::parse();
+
+    if cli.update {
+        update::run();
+        return;
+    }
 
     let input = match cli.sql {
         Some(sql) => sql,

@@ -12,6 +12,12 @@ curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/scripts/inst
 
 This downloads the latest release binary and installs it to `/usr/local/bin`. Uses `sudo` if needed.
 
+### Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/scripts/uninstall.sh | sh
+```
+
 ### Build from Source
 
 Requires [Rust](https://www.rust-lang.org/tools/install) toolchain.
@@ -47,6 +53,7 @@ Arguments:
 
 Options:
   -m, --minify   Minify SQL instead of beautifying
+  -U, --update   Update sqlfmt to the latest release
   -h, --help     Print help
   -V, --version  Print version
 ```

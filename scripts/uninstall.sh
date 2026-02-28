@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${SQLFMT_INSTALL_DIR:-$HOME/.local/bin}"
 BINARY_NAME="sqlfmt"
 
 main() {
@@ -10,13 +10,7 @@ main() {
         exit 0
     fi
 
-    if [ -w "$INSTALL_DIR" ]; then
-        rm "${INSTALL_DIR}/${BINARY_NAME}"
-    else
-        printf "Removing %s/%s (requires sudo)...\n" "$INSTALL_DIR" "$BINARY_NAME"
-        sudo rm "${INSTALL_DIR}/${BINARY_NAME}"
-    fi
-
+    rm "${INSTALL_DIR}/${BINARY_NAME}"
     printf "Uninstalled %s from %s\n" "$BINARY_NAME" "$INSTALL_DIR"
 }
 

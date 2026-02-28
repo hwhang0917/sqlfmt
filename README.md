@@ -10,7 +10,7 @@ A fast SQL formatter and minifier. Single binary, no runtime dependencies.
 curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/scripts/install.sh | sh
 ```
 
-This downloads the latest release binary and installs it to `/usr/local/bin`. Uses `sudo` if needed.
+This downloads the latest release binary and installs it to `~/.local/bin`. Set `SQLFMT_INSTALL_DIR` to customize the install location.
 
 ### Uninstall
 
@@ -26,7 +26,7 @@ Requires [Rust](https://www.rust-lang.org/tools/install) toolchain.
 git clone https://github.com/hwhang0917/sqlfmt.git
 cd sqlfmt
 cargo build --release
-cp target/release/sqlfmt /usr/local/bin/
+cp target/release/sqlfmt ~/.local/bin/
 ```
 
 ## Usage

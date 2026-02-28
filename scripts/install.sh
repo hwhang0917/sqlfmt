@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${SQLFMT_INSTALL_DIR:-$HOME/.local/bin}"
 BINARY_NAME="sqlfmt"
 REPO="hwhang0917/sqlfmt"
 
@@ -9,6 +9,8 @@ main() {
     need_cmd curl
     need_cmd tar
     need_cmd uname
+
+    mkdir -p "$INSTALL_DIR"
 
     arch=$(uname -m)
     os=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -46,16 +48,15 @@ main() {
         err "Binary not found in archive"
     fi
 
-    if [ -w "$INSTALL_DIR" ]; then
-        mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-    else
-        printf "Installing to %s (requires sudo)...\n" "$INSTALL_DIR"
-        sudo mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-    fi
-
+    mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
     chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
     printf "Installed %s %s to %s/%s\n" "$BINARY_NAME" "$tag" "$INSTALL_DIR" "$BINARY_NAME"
+
+    case ":$PATH:" in
+        *":$INSTALL_DIR:"*) ;;
+        *) printf "\nNote: %s is not in your PATH. Add it with:\n  export PATH=\"%s:\$PATH\"\n" "$INSTALL_DIR" "$INSTALL_DIR" ;;
+    esac
 }
 
 need_cmd() {

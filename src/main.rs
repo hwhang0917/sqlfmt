@@ -57,5 +57,5 @@ fn main() {
         formatter::beautify(&tokens)
     };
 
-    print!("{output}");
+    println!("{output}");
 }

@@ -4,6 +4,9 @@ on:
   push:
     tags: ["v*"]
 
+permissions:
+  contents: write
+
 jobs:
   publish:
     name: cargo publish
@@ -14,6 +17,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Verify tag matches crate version
+        id: version
         run: |
           tag="${GITHUB_REF_NAME#v}"
           crate=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
@@ -21,5 +25,20 @@ jobs:
             echo "Tag $GITHUB_REF_NAME (${tag}) does not match Cargo.toml version ${crate}" >&2
             exit 1
           fi
+          echo "version=$tag" >> "$GITHUB_OUTPUT"
 
-      - run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            Available on [crates.io](https://crates.io/crates/rf-sqlfmt/${{ steps.version.outputs.version }}):
+
+            ```bash
+            cargo install rf-sqlfmt
+            ```

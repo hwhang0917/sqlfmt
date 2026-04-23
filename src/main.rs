@@ -3,9 +3,16 @@ mod update;
 use sqlfmt::formatter;
 use sqlfmt::tokenizer;
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use std::io::{self, IsTerminal, Read};
 use std::process;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+enum ColorWhen {
+    Auto,
+    Always,
+    Never,
+}
 
 #[derive(Parser)]
 #[command(name = "sqlfmt", about = "Format and beautify SQL", version)]
@@ -17,9 +24,23 @@ struct Cli {
     #[arg(short, long)]
     minify: bool,
 
+    /// When to use ANSI color output
+    #[arg(long, value_enum, default_value_t = ColorWhen::Auto)]
+    color: ColorWhen,
+
     /// Update sqlfmt to the latest release
     #[arg(short = 'U', long)]
     update: bool,
+}
+
+fn should_colorize(when: ColorWhen) -> bool {
+    match when {
+        ColorWhen::Always => true,
+        ColorWhen::Never => false,
+        ColorWhen::Auto => {
+            std::env::var_os("NO_COLOR").is_none() && io::stdout().is_terminal()
+        }
+    }
 }
 
 fn main() {
@@ -51,10 +72,16 @@ fn main() {
     }
 
     let tokens = tokenizer::tokenize(&input);
-    let output = if cli.minify {
+    let formatted = if cli.minify {
         formatter::minify(&tokens)
     } else {
         formatter::beautify(&tokens)
+    };
+
+    let output = if should_colorize(cli.color) {
+        formatter::colorize(&formatted, &formatter::Palette::ansi())
+    } else {
+        formatted
     };
 
     println!("{output}");

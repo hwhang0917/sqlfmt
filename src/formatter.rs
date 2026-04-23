@@ -490,6 +490,123 @@ fn needs_space(prev: PrevToken, token: &Token) -> bool {
     }
 }
 
+pub struct Palette {
+    pub keyword: &'static str,
+    pub identifier: &'static str,
+    pub string: &'static str,
+    pub number: &'static str,
+    pub operator: &'static str,
+    pub comment: &'static str,
+    pub punct: &'static str,
+    pub reset: &'static str,
+}
+
+impl Palette {
+    pub const fn ansi() -> Self {
+        Self {
+            keyword: "\x1b[1;36m",
+            identifier: "",
+            string: "\x1b[32m",
+            number: "\x1b[33m",
+            operator: "",
+            comment: "\x1b[2m",
+            punct: "",
+            reset: "\x1b[0m",
+        }
+    }
+
+    pub const fn none() -> Self {
+        Self {
+            keyword: "",
+            identifier: "",
+            string: "",
+            number: "",
+            operator: "",
+            comment: "",
+            punct: "",
+            reset: "",
+        }
+    }
+}
+
+pub fn colorize(formatted: &str, palette: &Palette) -> String {
+    let tokens = crate::tokenizer::tokenize(formatted);
+    let mut out = String::with_capacity(formatted.len());
+    for token in tokens {
+        match token {
+            Token::Keyword(kw) => {
+                out.push_str(palette.keyword);
+                out.push_str(&kw);
+                out.push_str(palette.reset);
+            }
+            Token::Identifier(id) => {
+                out.push_str(palette.identifier);
+                out.push_str(&id);
+                if !palette.identifier.is_empty() {
+                    out.push_str(palette.reset);
+                }
+            }
+            Token::StringLiteral(s) => {
+                out.push_str(palette.string);
+                out.push_str(&s);
+                out.push_str(palette.reset);
+            }
+            Token::NumberLiteral(n) => {
+                out.push_str(palette.number);
+                out.push_str(&n);
+                out.push_str(palette.reset);
+            }
+            Token::Operator(op) => {
+                out.push_str(palette.operator);
+                out.push_str(&op);
+                if !palette.operator.is_empty() {
+                    out.push_str(palette.reset);
+                }
+            }
+            Token::Comment(c) => {
+                out.push_str(palette.comment);
+                out.push_str(&c);
+                out.push_str(palette.reset);
+            }
+            Token::Comma => {
+                out.push_str(palette.punct);
+                out.push(',');
+                if !palette.punct.is_empty() {
+                    out.push_str(palette.reset);
+                }
+            }
+            Token::Semicolon => {
+                out.push_str(palette.punct);
+                out.push(';');
+                if !palette.punct.is_empty() {
+                    out.push_str(palette.reset);
+                }
+            }
+            Token::OpenParen => {
+                out.push_str(palette.punct);
+                out.push('(');
+                if !palette.punct.is_empty() {
+                    out.push_str(palette.reset);
+                }
+            }
+            Token::CloseParen => {
+                out.push_str(palette.punct);
+                out.push(')');
+                if !palette.punct.is_empty() {
+                    out.push_str(palette.reset);
+                }
+            }
+            Token::Whitespace(ws) => {
+                out.push_str(&ws);
+            }
+            Token::Other(o) => {
+                out.push_str(&o);
+            }
+        }
+    }
+    out
+}
+
 pub fn minify(tokens: &[Token]) -> String {
     let mut out = String::new();
     let mut prev = PrevToken::None;

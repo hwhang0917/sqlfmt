@@ -24,6 +24,11 @@ fn is_join_modifier(kw: &str) -> bool {
     matches!(kw, "LEFT" | "RIGHT" | "INNER" | "OUTER" | "CROSS" | "FULL" | "NATURAL")
 }
 
+// Keywords allowed between CREATE/ALTER and TABLE (e.g., CREATE OR REPLACE TABLE)
+fn is_ddl_modifier(kw: &str) -> bool {
+    matches!(kw, "OR" | "REPLACE" | "TEMPORARY" | "TEMP" | "UNIQUE" | "IF" | "NOT" | "EXISTS")
+}
+
 fn indent_str(level: usize) -> String {
     "  ".repeat(level)
 }
@@ -41,6 +46,10 @@ fn next_significant_token(tokens: &[&Token], from: usize) -> Option<usize> {
     None
 }
 
+fn ends_in_word_like(s: &str) -> bool {
+    s.chars().last().is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '`' || c == '"' || c == ']')
+}
+
 fn paren_contains_subquery(tokens: &[&Token], start: usize) -> bool {
     if let Some(j) = next_significant_token(tokens, start) {
         if let Token::Keyword(kw) = tokens[j] {
@@ -48,6 +57,23 @@ fn paren_contains_subquery(tokens: &[&Token], start: usize) -> bool {
         }
     }
     false
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum ParenMode {
+    Inline,
+    Subquery,
+    DefList,
+}
+
+struct ParenCtx {
+    saved_base_indent: usize,
+    saved_in_clause_content: bool,
+    mode: ParenMode,
+}
+
+fn innermost_mode(stack: &[ParenCtx]) -> Option<ParenMode> {
+    stack.last().map(|c| c.mode)
 }
 
 pub fn beautify(tokens: &[Token]) -> String {
@@ -61,18 +87,18 @@ pub fn beautify(tokens: &[Token]) -> String {
     let mut line_started = false;
     let mut in_clause_content = false;
     let mut need_blank_line = false;
-    let mut i = 0;
-
-    // Paren stack: (saved_base_indent, saved_in_clause_content, is_subquery)
-    let mut paren_stack: Vec<(usize, bool, bool)> = Vec::new();
-    // Track inline paren depth (non-subquery parens where commas don't cause newlines)
-    let mut inline_paren_depth: usize = 0;
-
-    // Track what the last emitted non-whitespace token type was for space decisions
+    let mut paren_stack: Vec<ParenCtx> = Vec::new();
     let mut last_was_keyword = false;
 
+    // DDL context: mark the next top-level `(` after CREATE/ALTER TABLE as a
+    // column definition list (one item per line).
+    let mut saw_create_alter = false;
+    let mut expect_def_list_paren = false;
+
+    let mut i = 0;
     while i < filtered.len() {
         let token = filtered[i];
+        let in_inline = innermost_mode(&paren_stack) == Some(ParenMode::Inline);
 
         match token {
             Token::Comment(c) => {
@@ -104,7 +130,7 @@ pub fn beautify(tokens: &[Token]) -> String {
                 }
 
                 // Inside inline parens, keywords are just inline
-                if inline_paren_depth > 0 {
+                if in_inline {
                     if line_started {
                         out.push(' ');
                     }
@@ -113,6 +139,18 @@ pub fn beautify(tokens: &[Token]) -> String {
                     last_was_keyword = true;
                     i += 1;
                     continue;
+                }
+
+                // DDL state tracking (only at top level outside any paren)
+                if paren_stack.is_empty() {
+                    if matches!(upper.as_str(), "CREATE" | "ALTER") {
+                        saw_create_alter = true;
+                    } else if upper == "TABLE" && saw_create_alter {
+                        expect_def_list_paren = true;
+                        saw_create_alter = false;
+                    } else if !is_ddl_modifier(&upper) {
+                        saw_create_alter = false;
+                    }
                 }
 
                 // Check for join modifier + JOIN compound
@@ -128,7 +166,6 @@ pub fn beautify(tokens: &[Token]) -> String {
                             }
                         }
                     }
-                    // Not followed by JOIN, treat as regular keyword
                     emit_inline_keyword(&mut out, &mut line_started, &mut last_was_keyword, base_indent, in_clause_content, &upper);
                     i += 1;
                     continue;
@@ -157,7 +194,6 @@ pub fn beautify(tokens: &[Token]) -> String {
                     last_was_keyword = true;
                     i += 1;
                 } else if upper == "AND" || upper == "OR" {
-                    // AND/OR on new line at content indent (base_indent + 1)
                     if line_started {
                         out.push('\n');
                     }
@@ -167,19 +203,16 @@ pub fn beautify(tokens: &[Token]) -> String {
                     last_was_keyword = true;
                     i += 1;
                 } else {
-                    // Regular keyword (AS, NOT, IN, IS, NULL, COUNT, etc.)
                     emit_inline_keyword(&mut out, &mut line_started, &mut last_was_keyword, base_indent, in_clause_content, &upper);
                     i += 1;
                 }
             }
             Token::Comma => {
-                if inline_paren_depth > 0 {
-                    // Inside inline parens: comma + space, no newline
+                if in_inline {
                     out.push(',');
-                    // Space will be added by next token
                     line_started = true;
                 } else {
-                    // Trailing comma style: comma at end, newline, next item indented
+                    // Clause-level or DefList: comma at end, newline, next item re-indents
                     out.push(',');
                     out.push('\n');
                     line_started = false;
@@ -194,62 +227,106 @@ pub fn beautify(tokens: &[Token]) -> String {
                 in_clause_content = false;
                 need_blank_line = true;
                 last_was_keyword = false;
+                saw_create_alter = false;
+                expect_def_list_paren = false;
                 i += 1;
             }
             Token::OpenParen => {
-                let is_subquery = paren_contains_subquery(&filtered, i);
-                if is_subquery {
-                    let paren_indent = if in_clause_content { base_indent + 1 } else { base_indent };
-                    if !line_started {
-                        out.push_str(&indent_str(paren_indent));
-                    } else {
-                        out.push(' ');
-                    }
-                    out.push('(');
-                    out.push('\n');
-                    paren_stack.push((base_indent, in_clause_content, true));
-                    base_indent = paren_indent + 1;
-                    in_clause_content = false;
-                    line_started = false;
+                let mode = if paren_contains_subquery(&filtered, i) {
+                    ParenMode::Subquery
+                } else if expect_def_list_paren && paren_stack.is_empty() {
+                    ParenMode::DefList
                 } else {
-                    if inline_paren_depth == 0 {
-                        paren_stack.push((base_indent, in_clause_content, false));
+                    ParenMode::Inline
+                };
+                expect_def_list_paren = false;
+
+                match mode {
+                    ParenMode::Subquery => {
+                        let paren_indent = if in_clause_content { base_indent + 1 } else { base_indent };
+                        if !line_started {
+                            out.push_str(&indent_str(paren_indent));
+                        } else {
+                            out.push(' ');
+                        }
+                        out.push('(');
+                        out.push('\n');
+                        paren_stack.push(ParenCtx {
+                            saved_base_indent: base_indent,
+                            saved_in_clause_content: in_clause_content,
+                            mode,
+                        });
+                        base_indent = paren_indent + 1;
+                        in_clause_content = false;
+                        line_started = false;
                     }
-                    inline_paren_depth += 1;
-                    // Space before ( depends on context
-                    if !line_started {
-                        out.push_str(&indent_str(if in_clause_content { base_indent + 1 } else { base_indent }));
-                    } else if !last_was_keyword {
-                        out.push(' ');
+                    ParenMode::DefList => {
+                        if !line_started {
+                            out.push_str(&indent_str(base_indent));
+                        } else {
+                            out.push(' ');
+                        }
+                        out.push('(');
+                        out.push('\n');
+                        paren_stack.push(ParenCtx {
+                            saved_base_indent: base_indent,
+                            saved_in_clause_content: in_clause_content,
+                            mode,
+                        });
+                        base_indent += 1;
+                        in_clause_content = false;
+                        line_started = false;
                     }
-                    out.push('(');
-                    line_started = true;
+                    ParenMode::Inline => {
+                        if !line_started {
+                            out.push_str(&indent_str(if in_clause_content { base_indent + 1 } else { base_indent }));
+                        } else if !last_was_keyword && !ends_in_word_like(&out) {
+                            out.push(' ');
+                        }
+                        out.push('(');
+                        paren_stack.push(ParenCtx {
+                            saved_base_indent: base_indent,
+                            saved_in_clause_content: in_clause_content,
+                            mode,
+                        });
+                        line_started = true;
+                    }
                 }
                 last_was_keyword = false;
                 i += 1;
             }
             Token::CloseParen => {
-                if inline_paren_depth > 0 {
-                    out.push(')');
-                    inline_paren_depth -= 1;
-                    if inline_paren_depth == 0 {
-                        paren_stack.pop();
+                match paren_stack.pop() {
+                    Some(ctx) => match ctx.mode {
+                        ParenMode::Inline => {
+                            out.push(')');
+                            line_started = true;
+                        }
+                        ParenMode::Subquery => {
+                            if line_started {
+                                out.push('\n');
+                            }
+                            out.push_str(&indent_str(ctx.saved_base_indent + 1));
+                            out.push(')');
+                            base_indent = ctx.saved_base_indent;
+                            in_clause_content = ctx.saved_in_clause_content;
+                            line_started = true;
+                        }
+                        ParenMode::DefList => {
+                            if line_started {
+                                out.push('\n');
+                            }
+                            out.push_str(&indent_str(ctx.saved_base_indent));
+                            out.push(')');
+                            base_indent = ctx.saved_base_indent;
+                            in_clause_content = ctx.saved_in_clause_content;
+                            line_started = true;
+                        }
+                    },
+                    None => {
+                        out.push(')');
+                        line_started = true;
                     }
-                    line_started = true;
-                } else if let Some((saved_base, saved_in_clause, true)) = paren_stack.pop() {
-                    // Closing a subquery paren
-                    if line_started {
-                        out.push('\n');
-                    }
-                    // Close paren at the indent level of the content of the outer clause
-                    out.push_str(&indent_str(saved_base + 1));
-                    out.push(')');
-                    base_indent = saved_base;
-                    in_clause_content = saved_in_clause;
-                    line_started = true;
-                } else {
-                    out.push(')');
-                    line_started = true;
                 }
                 last_was_keyword = false;
                 i += 1;
@@ -258,7 +335,7 @@ pub fn beautify(tokens: &[Token]) -> String {
                 if op == "." {
                     out.push('.');
                 } else {
-                    if inline_paren_depth > 0 {
+                    if in_inline {
                         if !out.ends_with('(') {
                             out.push(' ');
                         }
@@ -276,20 +353,18 @@ pub fn beautify(tokens: &[Token]) -> String {
                 i += 1;
             }
             _ => {
-                // Identifier, StringLiteral, NumberLiteral, Other
                 let text = match token {
                     Token::Identifier(s) | Token::StringLiteral(s) | Token::NumberLiteral(s) | Token::Other(s) => s.as_str(),
                     _ => unreachable!(),
                 };
 
-                if inline_paren_depth > 0 {
+                if in_inline {
                     if line_started && !out.ends_with('(') && !out.ends_with('.') {
                         out.push(' ');
                     }
                     out.push_str(text);
                     line_started = true;
                 } else if !line_started {
-                    // Start of new line: indent at content level
                     if in_clause_content {
                         out.push_str(&indent_str(base_indent + 1));
                     } else {

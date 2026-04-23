@@ -100,11 +100,39 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             continue;
         }
 
-        // Quoted identifier
+        // Quoted identifier (ANSI SQL, PostgreSQL)
         if ch == '"' {
             let start = i;
             i += 1;
             while i < len && chars[i] != '"' {
+                i += 1;
+            }
+            if i < len {
+                i += 1;
+            }
+            tokens.push(Token::Identifier(chars[start..i].iter().collect()));
+            continue;
+        }
+
+        // Backtick-quoted identifier (MySQL, MariaDB, SQLite)
+        if ch == '`' {
+            let start = i;
+            i += 1;
+            while i < len && chars[i] != '`' {
+                i += 1;
+            }
+            if i < len {
+                i += 1;
+            }
+            tokens.push(Token::Identifier(chars[start..i].iter().collect()));
+            continue;
+        }
+
+        // Bracket-quoted identifier (MSSQL, T-SQL)
+        if ch == '[' {
+            let start = i;
+            i += 1;
+            while i < len && chars[i] != ']' {
                 i += 1;
             }
             if i < len {

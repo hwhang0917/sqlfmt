@@ -82,6 +82,18 @@ fn tokenize_quoted_identifier() {
 }
 
 #[test]
+fn tokenize_backtick_identifier() {
+    let tokens = tokenize("`user`");
+    assert_eq!(tokens, vec![Token::Identifier("`user`".into())]);
+}
+
+#[test]
+fn tokenize_bracket_identifier() {
+    let tokens = tokenize("[my table]");
+    assert_eq!(tokens, vec![Token::Identifier("[my table]".into())]);
+}
+
+#[test]
 fn tokenize_case_insensitive_keywords() {
     let tokens = tokenize("select from where");
     let non_ws: Vec<_> = tokens.iter().filter(|t| !matches!(t, Token::Whitespace(_))).collect();

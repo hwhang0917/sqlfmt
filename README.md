@@ -52,11 +52,15 @@ Arguments:
   [SQL]  SQL string to format (reads from stdin if omitted)
 
 Options:
-  -m, --minify   Minify SQL instead of beautifying
-  -U, --update   Update sqlfmt to the latest release
-  -h, --help     Print help
-  -V, --version  Print version
+  -m, --minify         Minify SQL instead of beautifying
+      --color <WHEN>   When to use ANSI color output [auto|always|never] (default: auto)
+  -U, --update         Update sqlfmt to the latest release
+  -h, --help           Print help
+  -V, --version        Print version
 ```
+
+Output is syntax-highlighted when stdout is a terminal and suppressed when
+piped or redirected. `NO_COLOR` is honored.
 
 ## Examples
 
@@ -78,6 +82,24 @@ WHERE
   AND role = 'admin'
 ORDER BY
   name;
+```
+
+### DDL
+
+Column definitions are broken onto separate lines. Backtick (MySQL/MariaDB/
+SQLite), double-quote (ANSI/PostgreSQL), and bracket (MSSQL) quoted
+identifiers are recognized.
+
+```sql
+-- Input
+CREATE TABLE `user` (`id` INTEGER PRIMARY KEY NOT NULL, `name` TEXT NOT NULL, `age` INTEGER DEFAULT -1 NOT NULL);
+
+-- Output
+CREATE TABLE `user` (
+  `id` INTEGER PRIMARY KEY NOT NULL,
+  `name` TEXT NOT NULL,
+  `age` INTEGER DEFAULT -1 NOT NULL
+);
 ```
 
 ### Minify

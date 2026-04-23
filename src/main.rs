@@ -1,5 +1,3 @@
-mod update;
-
 use sqlfmt::formatter;
 use sqlfmt::tokenizer;
 
@@ -27,10 +25,6 @@ struct Cli {
     /// When to use ANSI color output
     #[arg(long, value_enum, default_value_t = ColorWhen::Auto)]
     color: ColorWhen,
-
-    /// Update sqlfmt to the latest release
-    #[arg(short = 'U', long)]
-    update: bool,
 }
 
 fn should_colorize(when: ColorWhen) -> bool {
@@ -45,11 +39,6 @@ fn should_colorize(when: ColorWhen) -> bool {
 
 fn main() {
     let cli = Cli::parse();
-
-    if cli.update {
-        update::run();
-        return;
-    }
 
     let input = match cli.sql {
         Some(sql) => sql,

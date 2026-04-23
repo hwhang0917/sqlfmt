@@ -1,13 +1,22 @@
 [package]
-name = "sqlfmt"
+name = "rf-sqlfmt"
 version = "0.5.0"
 edition = "2021"
 description = "A fast SQL formatter and minifier"
 license = "MIT"
+repository = "https://github.com/hwhang0917/sqlfmt"
+homepage = "https://github.com/hwhang0917/sqlfmt"
+readme = "README.md"
+keywords = ["sql", "formatter", "cli", "pretty-print", "minifier"]
+categories = ["command-line-utilities", "development-tools"]
+
+[lib]
+name = "sqlfmt"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sqlfmt"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.60", features = ["derive"] }
-ureq = { version = "3", features = ["json"] }
-serde = { version = "1", features = ["derive"] }
-flate2 = "1"
-tar = "0.4"

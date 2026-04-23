@@ -4,29 +4,20 @@ A fast SQL formatter and minifier. Single binary, no runtime dependencies.
 
 ## Installation
 
-### Quick Install (Linux / macOS)
+Requires a [Rust toolchain](https://www.rust-lang.org/tools/install).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/scripts/install.sh | sh
+cargo install rf-sqlfmt
 ```
 
-This downloads the latest release binary and installs it to `~/.local/bin`. Set `SQLFMT_INSTALL_DIR` to customize the install location.
+The binary is installed to `~/.cargo/bin/sqlfmt`.
 
-### Uninstall
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/hwhang0917/sqlfmt/main/scripts/uninstall.sh | sh
-```
-
-### Build from Source
-
-Requires [Rust](https://www.rust-lang.org/tools/install) toolchain.
+### Build from source
 
 ```bash
 git clone https://github.com/hwhang0917/sqlfmt.git
 cd sqlfmt
-cargo build --release
-cp target/release/sqlfmt ~/.local/bin/
+cargo install --path .
 ```
 
 ## Usage
@@ -54,7 +45,6 @@ Arguments:
 Options:
   -m, --minify         Minify SQL instead of beautifying
       --color <WHEN>   When to use ANSI color output [auto|always|never] (default: auto)
-  -U, --update         Update sqlfmt to the latest release
   -h, --help           Print help
   -V, --version        Print version
 ```

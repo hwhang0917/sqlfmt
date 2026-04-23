@@ -5,7 +5,7 @@ CARGO_TOML="Cargo.toml"
 
 usage() {
     printf "Usage: %s <major|minor|patch>\n\n" "$(basename "$0")"
-    printf "Bump the version in Cargo.toml, commit, tag, and push to trigger a release.\n\n"
+    printf "Bump the version in Cargo.toml, commit, tag, and push to trigger cargo publish.\n\n"
     printf "Arguments:\n"
     printf "  major   Bump major version (e.g. 0.1.0 -> 1.0.0)\n"
     printf "  minor   Bump minor version (e.g. 0.1.0 -> 0.2.0)\n"
@@ -52,5 +52,5 @@ git tag "$tag" -m "Release ${tag}"
 git push origin HEAD
 git push origin "$tag"
 
-printf "Pushed %s — release workflow will run at:\n" "$tag"
+printf "Pushed %s — cargo publish workflow will run at:\n" "$tag"
 printf "  https://github.com/hwhang0917/sqlfmt/actions\n"

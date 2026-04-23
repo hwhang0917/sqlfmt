@@ -95,6 +95,11 @@ pub fn beautify(tokens: &[Token]) -> String {
     let mut saw_create_alter = false;
     let mut expect_def_list_paren = false;
 
+    // Unary sign detection: when `-` or `+` appears without a value on its
+    // left, attach the next value directly (DEFAULT -1, not DEFAULT - 1).
+    let mut prev_was_value = false;
+    let mut attach_next = false;
+
     let mut i = 0;
     while i < filtered.len() {
         let token = filtered[i];
@@ -115,19 +120,28 @@ pub fn beautify(tokens: &[Token]) -> String {
                 out.push('\n');
                 line_started = false;
                 last_was_keyword = false;
+                attach_next = false;
+                prev_was_value = false;
                 i += 1;
             }
             Token::Keyword(kw) => {
                 let upper = kw.to_uppercase();
+                attach_next = false;
 
-                // After a dot (e.g., t.count), emit as-is without spacing
+                // After a dot (e.g., t.count), emit as-is without spacing.
+                // The qualified name is value-like for unary/binary detection.
                 if out.ends_with('.') {
                     out.push_str(&upper);
                     line_started = true;
                     last_was_keyword = false;
+                    prev_was_value = true;
                     i += 1;
                     continue;
                 }
+
+                // Value-like keywords (NULL, TRUE, FALSE, etc.) are treated as
+                // values so a following `-` is binary.
+                prev_was_value = matches!(upper.as_str(), "TRUE" | "FALSE" | "NULL" | "UNBOUNDED");
 
                 // Inside inline parens, keywords are just inline
                 if in_inline {
@@ -218,6 +232,8 @@ pub fn beautify(tokens: &[Token]) -> String {
                     line_started = false;
                 }
                 last_was_keyword = false;
+                prev_was_value = false;
+                attach_next = false;
                 i += 1;
             }
             Token::Semicolon => {
@@ -229,6 +245,8 @@ pub fn beautify(tokens: &[Token]) -> String {
                 last_was_keyword = false;
                 saw_create_alter = false;
                 expect_def_list_paren = false;
+                prev_was_value = false;
+                attach_next = false;
                 i += 1;
             }
             Token::OpenParen => {
@@ -293,6 +311,8 @@ pub fn beautify(tokens: &[Token]) -> String {
                     }
                 }
                 last_was_keyword = false;
+                prev_was_value = false;
+                attach_next = false;
                 i += 1;
             }
             Token::CloseParen => {
@@ -329,27 +349,41 @@ pub fn beautify(tokens: &[Token]) -> String {
                     }
                 }
                 last_was_keyword = false;
+                prev_was_value = true;
+                attach_next = false;
                 i += 1;
             }
             Token::Operator(op) => {
                 if op == "." {
                     out.push('.');
-                } else {
-                    if in_inline {
-                        if !out.ends_with('(') {
-                            out.push(' ');
-                        }
-                    } else if line_started {
-                        out.push(' ');
-                    } else if in_clause_content {
-                        out.push_str(&indent_str(base_indent + 1));
-                    } else {
-                        out.push_str(&indent_str(base_indent));
-                    }
-                    out.push_str(op);
+                    line_started = true;
+                    last_was_keyword = false;
+                    attach_next = false;
+                    // prev_was_value stays as-is so the next identifier after
+                    // `.` is emitted without a leading space (handled by the
+                    // `out.ends_with('.')` check).
+                    i += 1;
+                    continue;
                 }
+
+                let is_unary = matches!(op.as_str(), "-" | "+") && !prev_was_value;
+
+                if in_inline {
+                    if !out.ends_with('(') {
+                        out.push(' ');
+                    }
+                } else if line_started {
+                    out.push(' ');
+                } else if in_clause_content {
+                    out.push_str(&indent_str(base_indent + 1));
+                } else {
+                    out.push_str(&indent_str(base_indent));
+                }
+                out.push_str(op);
                 line_started = true;
                 last_was_keyword = false;
+                attach_next = is_unary;
+                prev_was_value = false;
                 i += 1;
             }
             _ => {
@@ -358,7 +392,10 @@ pub fn beautify(tokens: &[Token]) -> String {
                     _ => unreachable!(),
                 };
 
-                if in_inline {
+                if attach_next {
+                    out.push_str(text);
+                    line_started = true;
+                } else if in_inline {
                     if line_started && !out.ends_with('(') && !out.ends_with('.') {
                         out.push(' ');
                     }
@@ -379,6 +416,8 @@ pub fn beautify(tokens: &[Token]) -> String {
                     out.push_str(text);
                 }
                 last_was_keyword = false;
+                prev_was_value = true;
+                attach_next = false;
                 i += 1;
             }
         }

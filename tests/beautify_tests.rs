@@ -182,6 +182,32 @@ VALUES
 }
 
 #[test]
+fn beautify_unary_minus_in_default() {
+    let tokens = tokenize("CREATE TABLE t (n INTEGER DEFAULT -1 NOT NULL);");
+    let expected = "\
+CREATE TABLE t (
+  n INTEGER DEFAULT -1 NOT NULL
+);
+";
+    assert_eq!(beautify(&tokens), expected);
+}
+
+#[test]
+fn beautify_unary_vs_binary_minus() {
+    let tokens = tokenize("SELECT -1, 1 - 2 FROM t WHERE x = -5;");
+    let expected = "\
+SELECT
+  -1,
+  1 - 2
+FROM
+  t
+WHERE
+  x = -5;
+";
+    assert_eq!(beautify(&tokens), expected);
+}
+
+#[test]
 fn beautify_dot_qualified_keyword_column() {
     let tokens = tokenize("SELECT t.count, t.key FROM t;");
     let expected = "\

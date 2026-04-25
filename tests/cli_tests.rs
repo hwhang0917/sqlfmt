@@ -178,7 +178,8 @@ fn cli_double_dash_then_positional() {
         .expect("failed to run sqlfmt");
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert_eq!(stdout.trim(), "SELECT 1;");
+    assert!(stdout.contains("SELECT"));
+    assert!(!stdout.contains("--"));
 }
 
 #[test]

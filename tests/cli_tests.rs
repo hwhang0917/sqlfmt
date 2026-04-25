@@ -116,3 +116,65 @@ fn cli_empty_input() {
     assert!(output.status.success());
     assert!(output.stdout.is_empty());
 }
+
+#[test]
+fn cli_color_inline_never() {
+    let output = sqlfmt()
+        .args(["--color=never", "SELECT 1;"])
+        .output()
+        .expect("failed to run sqlfmt");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(!stdout.contains("\x1b["));
+}
+
+#[test]
+fn cli_color_separate_never() {
+    let output = sqlfmt()
+        .args(["--color", "never", "SELECT 1;"])
+        .output()
+        .expect("failed to run sqlfmt");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(!stdout.contains("\x1b["));
+}
+
+#[test]
+fn cli_minify_long_flag() {
+    let output = sqlfmt()
+        .args(["--minify", "SELECT   *   FROM   users  ;"])
+        .output()
+        .expect("failed to run sqlfmt");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(stdout.trim(), "SELECT * FROM users;");
+}
+
+#[test]
+fn cli_unknown_flag_exits_2() {
+    let output = sqlfmt()
+        .arg("--bogus")
+        .output()
+        .expect("failed to run sqlfmt");
+    assert_eq!(output.status.code(), Some(2));
+}
+
+#[test]
+fn cli_extra_positional_exits_2() {
+    let output = sqlfmt()
+        .args(["SELECT 1;", "SELECT 2;"])
+        .output()
+        .expect("failed to run sqlfmt");
+    assert_eq!(output.status.code(), Some(2));
+}
+
+#[test]
+fn cli_double_dash_then_positional() {
+    let output = sqlfmt()
+        .args(["--", "SELECT 1;"])
+        .output()
+        .expect("failed to run sqlfmt");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("SELECT"));
+}

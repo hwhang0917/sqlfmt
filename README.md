@@ -52,6 +52,15 @@ Options:
 Output is syntax-highlighted when stdout is a terminal and suppressed when
 piped or redirected. `NO_COLOR` is honored.
 
+> **Note:** SQL line comments start with `--`, which collides with flag
+> parsing. To pass a SQL string that begins with `--`, end option parsing
+> with a literal `--` first, or pipe via stdin:
+>
+> ```bash
+> sqlfmt -- '-- a comment; SELECT * FROM users;'
+> echo '-- a comment; SELECT * FROM users;' | sqlfmt
+> ```
+
 ## Examples
 
 ### Beautify

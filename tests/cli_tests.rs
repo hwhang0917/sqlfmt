@@ -150,7 +150,7 @@ fn cli_minify_long_flag() {
     assert_eq!(stdout.trim(), "SELECT * FROM users;");
 }
 
-// Exit code 2 = usage error (POSIX convention; matches both clap and the std-only parser in src/main.rs).
+// Exit code 2 = usage error (POSIX convention).
 #[test]
 fn cli_unknown_flag_exits_2() {
     let output = sqlfmt()
@@ -160,7 +160,7 @@ fn cli_unknown_flag_exits_2() {
     assert_eq!(output.status.code(), Some(2));
 }
 
-// Exit code 2 = usage error (POSIX convention; matches both clap and the std-only parser in src/main.rs).
+// Exit code 2 = usage error (POSIX convention).
 #[test]
 fn cli_extra_positional_exits_2() {
     let output = sqlfmt()

@@ -150,6 +150,7 @@ fn cli_minify_long_flag() {
     assert_eq!(stdout.trim(), "SELECT * FROM users;");
 }
 
+// Exit code 2 = usage error (POSIX convention; matches both clap and the std-only parser in src/main.rs).
 #[test]
 fn cli_unknown_flag_exits_2() {
     let output = sqlfmt()
@@ -159,6 +160,7 @@ fn cli_unknown_flag_exits_2() {
     assert_eq!(output.status.code(), Some(2));
 }
 
+// Exit code 2 = usage error (POSIX convention; matches both clap and the std-only parser in src/main.rs).
 #[test]
 fn cli_extra_positional_exits_2() {
     let output = sqlfmt()
@@ -176,5 +178,17 @@ fn cli_double_dash_then_positional() {
         .expect("failed to run sqlfmt");
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("SELECT"));
+    assert_eq!(stdout.trim(), "SELECT 1;");
+}
+
+#[test]
+fn cli_color_always_overrides_no_color_env() {
+    let output = sqlfmt()
+        .env("NO_COLOR", "1")
+        .args(["--color=always", "SELECT 1;"])
+        .output()
+        .expect("failed to run sqlfmt");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("\x1b["));
 }

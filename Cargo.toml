@@ -10,6 +10,13 @@ readme = "README.md"
 keywords = ["sql", "formatter", "cli", "pretty-print", "minifier"]
 categories = ["command-line-utilities", "development-tools"]
 
+[profile.release]
+strip = "symbols"
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = "z"
+
 [lib]
 name = "sqlfmt"
 path = "src/lib.rs"

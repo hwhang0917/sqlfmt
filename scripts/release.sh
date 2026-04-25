@@ -46,7 +46,9 @@ printf "Bumping version: %s -> %s\n" "$current" "$next"
 
 sed -i "s/^version = \"$current\"/version = \"$next\"/" "$CARGO_TOML"
 
-git add "$CARGO_TOML"
+cargo build
+
+git add "$CARGO_TOML" Cargo.lock
 git commit -m "Release ${tag}"
 git tag "$tag" -m "Release ${tag}"
 git push origin HEAD

@@ -1,5 +1,7 @@
 # sqlfmt
 
+![Crates.io Version](https://img.shields.io/crates/v/rf-sqlfmt) ![Crates.io Total Downloads](https://img.shields.io/crates/d/rf-sqlfmt) ![GitHub License](https://img.shields.io/github/license/hwhang0917/sqlfmt)
+
 A fast SQL formatter and minifier. Single binary, no runtime dependencies.
 
 ## Installation
